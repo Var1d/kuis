@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KUIS REBUTAN — Game Show Real-time</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #080c14;
+      --bg2:     #0d1525;
+      --bg3:     #111c30;
+      --primary: #00f5ff;
+      --accent:  #ff2d78;
+      --gold:    #ffd700;
+      --green:   #39ff14;
+      --purple:  #bf5fff;
+      --text:    #e0f0ff;
+      --muted:   #4a6080;
+      --glow:    0 0 12px var(--primary), 0 0 30px rgba(0,245,255,.3);
+      --glow-acc:0 0 12px var(--accent),  0 0 30px rgba(255,45,120,.3);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Rajdhani', sans-serif; font-size: 16px;
+      min-height: 100vh; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: 999; pointer-events: none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.08) 2px, rgba(0,0,0,.08) 4px);
+    }
+    body::after {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background-image: linear-gradient(rgba(0,245,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 16px; }
+    header { text-align: center; padding: 24px 20px 16px; }
+    header h1 {
+      font-family: 'Press Start 2P', monospace; font-size: clamp(13px,2.8vw,20px);
+      color: var(--primary); text-shadow: var(--glow); letter-spacing: 2px; line-height: 1.6;
+      animation: flicker 5s infinite;
+    }
+    header p { color: var(--muted); font-size: 12px; margin-top: 8px; letter-spacing: 2px; text-transform: uppercase; }
+    @keyframes flicker { 0%,95%,100%{opacity:1}96%{opacity:.7}97%{opacity:1}98%{opacity:.5} }
+
+    /* ── Panel ── */
+    .panel {
+      background: var(--bg2); border: 1px solid rgba(0,245,255,.18);
+      border-radius: 4px; padding: 20px; margin-bottom: 16px; position: relative; overflow: hidden;
+    }
+    .panel::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+    .panel-title { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--primary); letter-spacing: 2px; margin-bottom: 14px; opacity: .7; }
+
+    /* ── Layout 2-col ── */
+    .game-grid { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+    @media(max-width:700px){ .game-grid { grid-template-columns: 1fr; } }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── Forms ── */
+    .form-row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    input[type="text"] {
+      flex: 1; min-width: 160px; background: rgba(0,245,255,.05);
+      border: 1px solid rgba(0,245,255,.3); border-radius: 3px;
+      color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 600;
+      padding: 10px 14px; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(0,245,255,.15); }
+    input::placeholder { color: var(--muted); }
+
+    /* ── Buttons ── */
+    .btn {
+      font-family: 'Press Start 2P', monospace; font-size: 8px; letter-spacing: 1px;
+      padding: 11px 16px; border: none; border-radius: 3px; cursor: pointer;
+      transition: transform .1s, box-shadow .2s, opacity .2s; white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
+    .btn-cyan  { background: var(--primary); color: #000; box-shadow: 0 0 14px rgba(0,245,255,.4); }
+    .btn-cyan:hover:not(:disabled)  { box-shadow: 0 0 24px rgba(0,245,255,.7); }
+    .btn-pink  { background: var(--accent);  color: #fff; box-shadow: 0 0 14px rgba(255,45,120,.4); }
+    .btn-pink:hover:not(:disabled)  { box-shadow: 0 0 24px rgba(255,45,120,.7); }
+    .btn-green { background: var(--green);   color: #000; box-shadow: 0 0 14px rgba(57,255,20,.4); }
+    .btn-red   { background: #ff3c3c;        color: #fff; box-shadow: 0 0 14px rgba(255,60,60,.4); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--muted); }
+    .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--text); }
+    .btn-block { width: 100%; text-align: center; }
+
+    /* ── BUZZ ── */
+    .buzz-btn {
+      width: 100%; padding: 32px 20px;
+      font-family: 'Press Start 2P', monospace; font-size: clamp(14px,3.5vw,22px);
+      background: radial-gradient(circle at center, #ff2d78, #8b0035);
+      color: #fff; border: 3px solid var(--accent); border-radius: 8px; cursor: pointer;
+      text-shadow: 0 0 16px rgba(255,255,255,.5);
+      box-shadow: 0 0 28px rgba(255,45,120,.6), inset 0 0 24px rgba(0,0,0,.3);
+      transition: transform .08s, box-shadow .15s; animation: pulse 2s ease-in-out infinite;
+    }
+    .buzz-btn:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 0 50px rgba(255,45,120,.9), inset 0 0 24px rgba(0,0,0,.3); }
+    .buzz-btn:active:not(:disabled){ transform: scale(.96); }
+    .buzz-btn:disabled { background: radial-gradient(circle at center,#333,#111); border-color: var(--muted); color: var(--muted); box-shadow: none; animation: none; cursor: not-allowed; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 28px rgba(255,45,120,.6),inset 0 0 24px rgba(0,0,0,.3)} 50%{box-shadow:0 0 52px rgba(255,45,120,.9),inset 0 0 24px rgba(0,0,0,.3)} }
+
+    /* ── Countdown ring ── */
+    .timer-wrap { display: none; justify-content: center; align-items: center; flex-direction: column; gap: 6px; margin: 16px 0; }
+    .timer-wrap.visible { display: flex; }
+    .timer-ring { position: relative; width: 90px; height: 90px; }
+    .timer-ring svg { transform: rotate(-90deg); }
+    .timer-ring circle { fill: none; stroke-width: 6; }
+    .timer-ring .bg   { stroke: rgba(255,255,255,.1); }
+    .timer-ring .prog { stroke: var(--primary); stroke-linecap: round; transition: stroke-dashoffset .9s linear, stroke .5s; }
+    .timer-ring .prog.urgent { stroke: var(--accent); }
+    .timer-number {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-family: 'Press Start 2P', monospace; font-size: 20px; color: var(--primary);
+    }
+    .timer-number.urgent { color: var(--accent); animation: blink .5s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .timer-label { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+
+    /* ── Answer chat input ── */
+    .answer-area { display: none; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .answer-area.visible { display: flex; }
+    .answer-row { display: flex; gap: 8px; }
+    .answer-hint { font-size: 12px; color: var(--gold); letter-spacing: 1px; font-weight: 700; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      background: rgba(0,245,255,.05); border: 1px solid rgba(0,245,255,.12);
+      border-radius: 3px; padding: 12px 16px; font-size: 15px; font-weight: 600;
+      min-height: 46px; color: var(--text); line-height: 1.5;
+    }
+
+    /* ── Question ── */
+    .question-box {
+      background: rgba(0,245,255,.06); border: 2px solid rgba(0,245,255,.28);
+      border-radius: 4px; padding: 18px; font-size: clamp(14px,2.2vw,17px); font-weight: 700;
+      line-height: 1.6; text-align: center; color: var(--primary); text-shadow: var(--glow);
+      display: none; animation: fadeIn .4s ease; margin-bottom: 12px;
+    }
+    .question-box.visible { display: block; }
+    .question-label { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--muted); margin-bottom: 8px; letter-spacing: 2px; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Winner badge ── */
+    .winner-box { text-align: center; padding: 16px; display: none; animation: zoomIn .4s cubic-bezier(.175,.885,.32,1.275); }
+    .winner-box.visible { display: block; }
+    .winner-label { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--gold); text-shadow: 0 0 10px rgba(255,215,0,.6); margin-bottom: 8px; }
+    .winner-name  { font-family: 'Press Start 2P', monospace; font-size: clamp(13px,3.5vw,20px); color: var(--accent); text-shadow: var(--glow-acc); animation: shake .5s; }
+    @keyframes zoomIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+    @keyframes shake  { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+
+    /* ── Chat feed ── */
+    .chat-feed {
+      height: 220px; overflow-y: auto; padding: 10px;
+      background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.06);
+      border-radius: 3px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .chat-feed::-webkit-scrollbar { width: 4px; }
+    .chat-feed::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+    .chat-msg { font-size: 13px; line-height: 1.6; word-break: break-word; }
+    .chat-msg .who { font-weight: 700; margin-right: 6px; }
+    .chat-msg.system { color: var(--primary); opacity: .7; font-style: italic; font-size: 12px; }
+    .chat-msg.answer { background: rgba(0,245,255,.08); border-left: 3px solid var(--primary); padding: 4px 8px; border-radius: 2px; }
+    .chat-msg.answer .who { color: var(--primary); }
+    .chat-msg.self .who  { color: var(--gold); }
+
+    /* ── Scoreboard ── */
+    .score-title { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--gold); text-shadow: 0 0 8px rgba(255,215,0,.4); letter-spacing: 2px; margin-bottom: 10px; }
+    .score-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px; margin-bottom: 5px; border-radius: 3px;
+      background: rgba(255,255,255,.03); border-left: 3px solid var(--muted);
+      font-weight: 700; font-size: 14px; transition: all .3s;
+    }
+    .score-row:nth-child(1){ border-left-color: var(--gold); }
+    .score-row:nth-child(2){ border-left-color: #c0c0c0; }
+    .score-row:nth-child(3){ border-left-color: #cd7f32; }
+    .score-rank   { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--muted); width: 20px; }
+    .score-name   { flex: 1; padding: 0 10px; }
+    .score-points { color: var(--green); font-family: 'Press Start 2P', monospace; font-size: 9px; text-shadow: 0 0 8px rgba(57,255,20,.5); }
+    .score-empty  { color: var(--muted); font-size: 12px; padding: 8px 0; text-align: center; }
+
+    /* ── Host controls ── */
+    .host-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .host-controls .btn { font-size: 7px; padding: 10px 8px; }
+    @media(max-width:500px){ .host-controls { grid-template-columns: 1fr; } }
+
+    /* ── Conn badge ── */
+    .conn-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .conn-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .conn-dot.error     { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+    /* ── Role pills ── */
+    .role-pills { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .role-pill { flex:1; text-align:center; padding:18px 10px; border:2px solid rgba(255,255,255,.1); border-radius:4px; cursor:pointer; transition:all .2s; min-width:120px; }
+    .role-pill:hover { border-color: var(--primary); background: rgba(0,245,255,.05); }
+    .role-pill.selected { border-color: var(--primary); background: rgba(0,245,255,.1); }
+    .role-pill .icon  { font-size: 26px; display: block; margin-bottom: 7px; }
+    .role-pill .label { font-family: 'Press Start 2P', monospace; font-size: 7px; letter-spacing: 1px; }
+    .role-pill.host-pill   .label { color: var(--gold); }
+    .role-pill.player-pill .label { color: var(--primary); }
+
+    /* ── Misc ── */
+    .divider { border:none; border-top:1px solid rgba(255,255,255,.07); margin:16px 0; }
+    .err-msg { color: var(--accent); font-size: 12px; min-height: 16px; }
+    .tag-answer { font-size: 10px; background: rgba(0,245,255,.15); color: var(--primary); border-radius: 2px; padding: 1px 6px; margin-left: 6px; font-weight: 700; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ KUIS REBUTAN ⚡</h1>
+  <p>Game Show Real-time • WebSocket Edition</p>
+</header>
+
+<div class="container">
+
+  <!-- ── SCREEN: LOGIN ── -->
+  <div id="screen-login" class="screen active">
+    <div class="panel">
+      <p class="panel-title">// PILIH PERAN</p>
+      <div class="role-pills">
+        <div class="role-pill host-pill"   onclick="selectRole('host')">
+          <span class="icon">🎤</span><span class="label">HOST</span>
+        </div>
+        <div class="role-pill player-pill" onclick="selectRole('player')">
+          <span class="icon">🙋</span><span class="label">PLAYER</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <input type="text" id="inp-username" placeholder="Masukkan username..." maxlength="20" />
+        <button class="btn btn-cyan" onclick="joinGame()">MASUK →</button>
+      </div>
+      <div id="login-err" class="err-msg"></div>
+    </div>
+    <div class="panel">
+      <p class="panel-title">// STATUS KONEKSI</p>
+      <span class="conn-badge">
+        <span class="conn-dot" id="conn-dot"></span>
+        <span id="conn-text">Menghubungkan...</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: HOST ── -->
+  <div id="screen-host" class="screen">
+    <div class="game-grid">
+      <!-- Kolom kiri: main area -->
+      <div>
+        <div class="panel">
+          <p class="panel-title">// PANEL HOST</p>
+          <div class="status-bar" id="host-status">Selamat datang, Host! Tekan tombol di bawah untuk mulai.</div>
+
+          <div class="question-box" id="host-question-box">
+            <div class="question-label">SOAL AKTIF</div>
+            <div id="host-question-text"></div>
+          </div>
+
+          <!-- Timer (host lihat juga) -->
+          <div class="timer-wrap" id="host-timer">
+            <div class="timer-ring">
+              <svg width="90" height="90" viewBox="0 0 90 90">
+                <circle class="bg"   cx="45" cy="45" r="38"/>
+                <circle class="prog" id="host-ring" cx="45" cy="45" r="38" stroke-dasharray="239" stroke-dashoffset="0"/>
+              </svg>
+              <div class="timer-number" id="host-timer-num">15</div>
+            </div>
+            <div class="timer-label">detik tersisa</div>
+          </div>
+
+          <!-- Jawaban benar untuk Host (selalu terlihat setelah soal dibuka) -->
+          <div id="host-correct-answer-box" class="panel" style="display:none;margin-top:12px;background:rgba(255,215,0,.1);border-color:var(--gold)">
+            <div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1px">🔑 JAWABAN BENAR</div>
+            <div id="host-correct-answer-text" style="font-size:18px;color:var(--gold);font-weight:700;margin-top:6px"></div>
+          </div>
+
+          <div class="winner-box" id="host-winner-box">
+            <div class="winner-label">⚡ SEDANG MENJAWAB:</div>
+            <div class="winner-name" id="host-winner-name"></div>
+            <div id="host-player-answer-display" style="margin-top:8px;font-size:14px;color:var(--primary);font-weight:700">
+              Jawaban player: <span id="host-player-answer-text"></span>
+            </div>
+            <div id="host-validate-buttons" style="margin-top:12px;display:none">
+              <button class="btn btn-green" onclick="judgeAnswer('benar')">✔ BENAR</button>
+              <button class="btn btn-red" onclick="judgeAnswer('salah')">✘ SALAH</button>
+            </div>
+            <div id="host-waiting-answer" style="margin-top:8px;font-size:12px;color:var(--muted)">Menunggu jawaban via chat...</div>
+          </div>
+
+          <div class="host-controls">
+            <button class="btn btn-cyan" onclick="startSession()">▶ BUKA SOAL BARU</button>
+            <button class="btn btn-ghost" onclick="nextRound()">⏭ SOAL BERIKUTNYA</button>
+            <button class="btn btn-ghost" onclick="resetScores()" style="grid-column:span 2">🔄 RESET SEMUA SKOR</button>
+          </div>
+        </div>
+
+        <!-- Chat feed host -->
+        <div class="panel">
+          <p class="panel-title">// CHAT & LOG</p>
+          <div class="chat-feed" id="host-chat"></div>
+        </div>
+      </div>
+
+      <!-- Kolom kanan: scoreboard -->
+      <div>
+        <div class="panel">
+          <div class="score-title">🏆 SCOREBOARD</div>
+          <div id="host-scoreboard"><div class="score-empty">Belum ada player.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: PLAYER ── -->
+  <div id="screen-player" class="screen">
+    <div class="game-grid">
+      <!-- Kolom kiri: main area -->
+      <div>
+        <div class="panel">
+          <p class="panel-title">// AREA BERMAIN</p>
+          <div class="status-bar" id="player-status">⏳ Menunggu Host membuka sesi...</div>
+
+          <div class="question-box" id="player-question-box" style="margin-top:12px">
+            <div class="question-label">PERTANYAAN</div>
+            <div id="player-question-text"></div>
+          </div>
+
+          <!-- Timer player -->
+          <div class="timer-wrap" id="player-timer" style="margin-top:12px">
+            <div class="timer-ring">
+              <svg width="90" height="90" viewBox="0 0 90 90">
+                <circle class="bg"   cx="45" cy="45" r="38"/>
+                <circle class="prog" id="player-ring" cx="45" cy="45" r="38" stroke-dasharray="239" stroke-dashoffset="0"/>
+              </svg>
+              <div class="timer-number" id="player-timer-num">15</div>
+            </div>
+            <div class="timer-label">detik untuk menjawab</div>
+          </div>
+
+          <div class="winner-box" id="player-winner-box" style="margin-top:12px">
+            <div class="winner-label">⚡ BUZZ TERCEPAT:</div>
+            <div class="winner-name" id="player-winner-name"></div>
+          </div>
+
+          <!-- Tombol BUZZ -->
+          <div style="margin-top:16px">
+            <button class="buzz-btn" id="buzz-btn" onclick="sendBuzz()" disabled>⚡ BUZZ! ⚡</button>
+          </div>
+
+          <!-- Area ketik jawaban (muncul hanya saat giliran kamu) -->
+          <div class="answer-area" id="answer-area">
+            <div class="answer-hint">✏️ Ketik jawabanmu sekarang!</div>
+            <div class="answer-row">
+              <input type="text" id="answer-input" placeholder="Ketik jawaban..." autocomplete="off" />
+              <button class="btn btn-cyan" onclick="submitAnswer()">KIRIM</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat feed player -->
+        <div class="panel">
+          <p class="panel-title">// CHAT</p>
+          <div class="chat-feed" id="player-chat"></div>
+        </div>
+      </div>
+
+      <!-- Kolom kanan: scoreboard -->
+      <div>
+        <div class="panel">
+          <div class="score-title">🏆 SCOREBOARD</div>
+          <div id="player-scoreboard"><div class="score-empty">Belum ada player.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//   CLIENT SCRIPT
+// ═══════════════════════════════════════════════════════
+const WS_URL = `ws://${location.hostname}:3000/ws`;
+
+let ws            = null;
+let myRole        = null;
+let myUsername    = '';
+let selectedRole  = null;
+let isMyTurnToAnswer = false;  // true saat BUZZ kita diterima
+let timerTotal    = 15;        // diisi dari server
+
+const $id = id => document.getElementById(id);
+
+// ─── Role selection ─────────────────────────────────────
+function selectRole(role) {
+  selectedRole = role;
+  document.querySelectorAll('.role-pill').forEach(p => p.classList.remove('selected'));
+  document.querySelector(`.${role}-pill`).classList.add('selected');
+}
+
+// ─── WebSocket ───────────────────────────────────────────
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen    = () => setConn(true);
+  ws.onclose   = () => { setConn(false); setTimeout(connectWS, 3000); };
+  ws.onerror   = () => setConn(false, true);
+  ws.onmessage = e  => handleMessage(JSON.parse(e.data));
+}
+
+function setConn(ok, err = false) {
+  const dot = $id('conn-dot'), txt = $id('conn-text');
+  dot.className = 'conn-dot ' + (err ? 'error' : ok ? 'connected' : '');
+  txt.textContent = err ? 'Gagal terhubung' : ok ? 'Terhubung ke server' : 'Koneksi terputus...';
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+// ─── Join ────────────────────────────────────────────────
+function joinGame() {
+  const username = $id('inp-username').value.trim();
+  if (!username)      { $id('login-err').textContent = 'Masukkan username!'; return; }
+  if (!selectedRole)  { $id('login-err').textContent = 'Pilih peran dulu!'; return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) { $id('login-err').textContent = 'Belum terhubung ke server!'; return; }
+  myUsername = username;
+  myRole     = selectedRole;
+  send(selectedRole === 'host' ? { type: 'JOIN_HOST', username } : { type: 'JOIN_PLAYER', username });
+}
+
+// ─── Host actions ────────────────────────────────────────
+function startSession() { send({ type: 'START_SESSION' }); }
+function nextRound()    { send({ type: 'NEXT_ROUND' });    }
+function resetScores()  { send({ type: 'RESET_SCORES' });  }
+function judgeAnswer(verdict) { send({ type: 'JUDGE', verdict }); }
+
+// ─── Player actions ──────────────────────────────────────
+function sendBuzz()     { send({ type: 'BUZZ' }); }
+
+function submitAnswer() {
+  const text = $id('answer-input').value.trim();
+  if (!text) return;
+  send({ type: 'SEND_ANSWER', text });
+  $id('answer-input').value = '';
+}
+
+// ─── Timer UI ────────────────────────────────────────────
+const CIRCUMFERENCE = 239; // 2π × 38
+
+function updateTimer(prefix, secondsLeft, total) {
+  const numEl  = $id(`${prefix}-timer-num`);
+  const ringEl = $id(`${prefix}-ring`);
+  const urgent = secondsLeft <= 5;
+
+  numEl.textContent  = secondsLeft;
+  numEl.className    = 'timer-number' + (urgent ? ' urgent' : '');
+  ringEl.className   = 'prog' + (urgent ? ' urgent' : '');
+  const offset = CIRCUMFERENCE * (1 - secondsLeft / total);
+  ringEl.style.strokeDashoffset = offset;
+}
+
+function showTimer(prefix, total) {
+  $id(`${prefix}-timer`).classList.add('visible');
+  updateTimer(prefix, total, total);
+}
+
+function hideTimer(prefix) {
+  $id(`${prefix}-timer`).classList.remove('visible');
+}
+
+// ─── Chat helpers ────────────────────────────────────────
+function addChat(feedId, from, text, cls = '') {
+  const feed = $id(feedId);
+  if (!feed) return;
+  const ts   = new Date().toLocaleTimeString('id-ID', { hour12: false });
+  const div  = document.createElement('div');
+  div.className = 'chat-msg ' + cls;
+  const isSelf = from === myUsername;
+  div.innerHTML = `<span class="who">${esc(from)}</span><span style="color:var(--muted);font-size:11px">${ts}</span><br>${esc(text)}`;
+  if (isSelf) div.classList.add('self');
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function addSysMsg(feedId, text) {
+  const feed = $id(feedId);
+  if (!feed) return;
+  const div = document.createElement('div');
+  div.className = 'chat-msg system';
+  div.textContent = text;
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+
+// ─── Message handler ─────────────────────────────────────
+function handleMessage(data) {
+  switch (data.type) {
+
+    case 'HOST_CONFIRMED':
+      showScreen('host');
+      addSysMsg('host-chat', `🎤 Kamu masuk sebagai HOST: ${data.username}`);
+      break;
+
+    case 'PLAYER_CONFIRMED':
+      showScreen('player');
+      addSysMsg('player-chat', `🙋 Kamu masuk sebagai PLAYER: ${data.username}`);
+      break;
+
+    case 'INFO':
+      addSysMsg('host-chat',   data.message);
+      addSysMsg('player-chat', data.message);
+      if (data.scoreboard) updateScoreboard(data.scoreboard);
+      break;
+
+    case 'ERROR':
+      $id('login-err').textContent = '⚠ ' + data.message;
+      break;
+
+    case 'SESSION_STARTED':
+      // ── Host
+      $id('host-question-text').textContent = data.question;
+      // Tampilkan jawaban benar jika ada (kirim dari server khusus untuk host)
+      if (data.correctAnswer) {
+        $id('host-correct-answer-text').textContent = data.correctAnswer;
+        $id('host-correct-answer-box').style.display = 'block';
+      } else {
+        $id('host-correct-answer-box').style.display = 'none';
+      }
+      show('host-question-box');
+      hide('host-winner-box');
+      hideTimer('host');
+      $id('host-status').textContent = `📋 Soal #${data.round} — Tunggu ada yang buzz...`;
+
+      // ── Player
+      $id('player-question-text').textContent = data.question;
+      show('player-question-box');
+      hide('player-winner-box');
+      hideTimer('player');
+      $id('player-status').textContent = `📋 Soal #${data.round} — Buzz sekarang!`;
+      $id('buzz-btn').disabled = false;
+      hide('answer-area');
+      isMyTurnToAnswer = false;
+
+      addSysMsg('host-chat',   `▶ Soal #${data.round}: "${data.question}"`);
+      addSysMsg('player-chat', `▶ Soal #${data.round}: "${data.question}"`);
+      if (data.scoreboard) updateScoreboard(data.scoreboard);
+      break;
+
+    case 'BUZZ_ACCEPTED':
+      timerTotal = data.timeLimit || 15;
+
+      // Reset host validation UI
+      $id('host-player-answer-display').style.display = 'none';
+      $id('host-validate-buttons').style.display = 'none';
+      $id('host-waiting-answer').style.display = 'block';
+
+      // ── Host
+      $id('host-winner-name').textContent = data.winner;
+      show('host-winner-box');
+      $id('host-status').textContent = `⚡ ${data.winner} buzz! Menunggu jawaban...`;
+      showTimer('host', timerTotal);
+
+      // ── Player
+      $id('player-winner-name').textContent = data.winner;
+      show('player-winner-box');
+      $id('player-status').textContent = `⚡ ${data.winner} buzz duluan!`;
+      $id('buzz-btn').disabled = true;
+      showTimer('player', timerTotal);
+
+      // Hanya pemenang buzz yang dapat kotak jawaban
+      isMyTurnToAnswer = (data.winner === myUsername);
+      if (isMyTurnToAnswer) {
+        show('answer-area');
+        $id('answer-input').focus();
+        $id('player-status').textContent = `⚡ Kamu buzz! Ketik jawabanmu sekarang!`;
+      } else {
+        hide('answer-area');
+      }
+
+      addSysMsg('host-chat',   `⚡ ${data.winner} BUZZ!`);
+      addSysMsg('player-chat', `⚡ ${data.winner} BUZZ!`);
+      break;
+
+    case 'ANSWER_TICK':
+      updateTimer('host',   data.secondsLeft, timerTotal);
+      updateTimer('player', data.secondsLeft, timerTotal);
+      break;
+
+    case 'PENDING_ANSWER':
+      // Host menerima jawaban player untuk divalidasi
+      $id('host-winner-name').textContent = data.player;
+      $id('host-player-answer-text').textContent = data.answer;
+      $id('host-player-answer-display').style.display = 'block';
+      $id('host-validate-buttons').style.display = 'grid';
+      $id('host-waiting-answer').style.display = 'none';
+      hideTimer('host');
+      $id('host-status').textContent = `📝 ${data.player} menjawab: "${data.answer}"`;
+      addSysMsg('host-chat', data.message);
+      break;
+
+    case 'CHAT_MESSAGE':
+      // Jawaban yang dikirim via chat
+      addChat('host-chat',   data.from, data.text, data.isAnswer ? 'answer' : '');
+      addChat('player-chat', data.from, data.text, data.isAnswer ? 'answer' : '');
+      break;
+
+    case 'ANSWER_RESULT':
+      hideTimer('host');
+      hideTimer('player');
+      hide('host-winner-box');
+      hide('answer-area');
+      isMyTurnToAnswer = false;
+      // Reset host validation UI
+      $id('host-player-answer-display').style.display = 'none';
+      $id('host-validate-buttons').style.display = 'none';
+      $id('host-waiting-answer').style.display = 'block';
+      $id('host-status').textContent   = data.message;
+      $id('player-status').textContent = data.message;
+      $id('buzz-btn').disabled = true;
+      addSysMsg('host-chat',   data.message + (data.judgedBy ? ` (validasi: ${data.judgedBy})` : ''));
+      addSysMsg('player-chat', data.message);
+      if (data.scoreboard) updateScoreboard(data.scoreboard);
+      break;
+
+    case 'ANSWER_TIMEOUT':
+      hideTimer('host');
+      hideTimer('player');
+      hide('host-winner-box');
+      hide('answer-area');
+      isMyTurnToAnswer = false;
+      $id('host-status').textContent   = data.message;
+      $id('player-status').textContent = data.message;
+      $id('buzz-btn').disabled = true;
+      addSysMsg('host-chat',   data.message);
+      addSysMsg('player-chat', data.message);
+      if (data.scoreboard) updateScoreboard(data.scoreboard);
+      break;
+
+    case 'WAITING':
+      hideTimer('host');
+      hideTimer('player');
+      hide('answer-area');
+      hide('host-winner-box');
+      isMyTurnToAnswer = false;
+      // Reset host validation UI
+      $id('host-player-answer-display').style.display = 'none';
+      $id('host-validate-buttons').style.display = 'none';
+      $id('host-waiting-answer').style.display = 'block';
+      $id('host-status').textContent   = data.message;
+      $id('player-status').textContent = data.message;
+      $id('buzz-btn').disabled = true;
+      if (data.scoreboard) updateScoreboard(data.scoreboard);
+      break;
+
+    case 'SCORES_RESET':
+      addSysMsg('host-chat',   data.message);
+      addSysMsg('player-chat', data.message);
+      if (data.scoreboard) updateScoreboard(data.scoreboard);
+      break;
+  }
+}
+
+// Simpan jawaban soal current untuk ditampilkan di host setelah buzz
+// (disimpan sisi server, tapi kita perlu track dari SESSION_STARTED di host)
+let currentQuestionAnswer = '';
+
+// ─── UI helpers ──────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $id(`screen-${name}`).classList.add('active');
+}
+function show(id) { $id(id)?.classList.add('visible');    }
+function hide(id) { $id(id)?.classList.remove('visible'); }
+
+function updateScoreboard(scores) {
+  ['host-scoreboard','player-scoreboard'].forEach(id => {
+    const el = $id(id);
+    if (!el) return;
+    if (!scores || scores.length === 0) {
+      el.innerHTML = '<div class="score-empty">Belum ada player.</div>'; return;
+    }
+    el.innerHTML = scores.map((s,i) => `
+      <div class="score-row">
+        <span class="score-rank">#${i+1}</span>
+        <span class="score-name">${esc(s.username)}</span>
+        <span class="score-points">${s.score} PTS</span>
+      </div>`).join('');
+  });
+}
+
+// ─── Keyboard shortcuts ──────────────────────────────────
+$id('inp-username').addEventListener('keydown', e => { if (e.key === 'Enter') joinGame(); });
+
+document.addEventListener('keydown', e => {
+  // Enter di kotak jawaban
+  if (e.key === 'Enter' && document.activeElement === $id('answer-input')) {
+    submitAnswer();
+  }
+  // Spasi = buzz (saat di layar player dan buzz aktif)
+  if (e.key === ' ' && myRole === 'player' && !$id('buzz-btn').disabled
+      && document.activeElement.tagName !== 'INPUT') {
+    e.preventDefault();
+    sendBuzz();
+  }
+});
+
+// ─── Init ────────────────────────────────────────────────
+connectWS();
+</script>
+</body>
+</html>

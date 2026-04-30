@@ -1,0 +1,17 @@
+{
+  "name": "praktikum7-websocket-kuis",
+  "version": "1.0.0",
+  "description": "Game Kuis Rebutan Real-time dengan WebSocket & Hono",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.0.0",
+    "@hono/node-ws": "^1.0.0",
+    "ws": "^8.0.0"
+  }
+}
