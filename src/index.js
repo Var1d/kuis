@@ -28,18 +28,19 @@ let roundNumber  = 0;
 let answerTimer  = null;    // setTimeout untuk countdown jawaban
 let tickInterval = null;    // setInterval untuk countdown detik
 
-// Bank soal pengetahuan umum
+// Bank soal
 const questionBank = [
-  { q: "Apa ibu kota Indonesia?",                             a: "jakarta" },
-  { q: "Planet terbesar di tata surya kita adalah?",          a: "jupiter" },
-  { q: "Siapa penemu bola lampu listrik?",                    a: "thomas edison" },
-  { q: "Berapa hasil dari 17 × 8?",                          a: "136" },
-  { q: "Negara mana yang memiliki luas wilayah terbesar?",    a: "rusia" },
-  { q: "Apa nama gunung tertinggi di dunia?",                 a: "everest" },
-  { q: "Berapa jumlah benua di bumi?",                        a: "7" },
-  { q: "Siapa presiden pertama Indonesia?",                   a: "soekarno" },
-  { q: "Unsur kimia dengan simbol 'Au' adalah?",              a: "emas" },
-  { q: "Bahasa pemrograman yang logonya berupa ular piton?",  a: "python" },
+  { q: "Siapa Leader dari KPOP Idol Group Hearts2Hearts?",       a: "Jiwoo" },
+  { q: "Siapa Idol Perempuan pertama dari Indonesia di SM?",     a: "Carmen" },
+  { q: "Siapa Main Dancer Hearts2Hearts?",                       a: "Juun" },
+  { q: "Siapa Maknae Hearts2Hearts?",                            a: "Yeon" },
+  { q: "Kapan Hearts2Hearts debut?",                             a: "24 Februari 2024" },
+  { q: "Ada berapa jumlah anggota Hearts2Hearts?",               a: "8" },
+  { q: "Siapa Member yang pernah menjadi MC Music Core di H2h?", a: "A-na" },
+  { q: "Siapa presiden pertama Indonesia?",                      a: "soekarno" },
+  { q: "Siapa Trainee dengan durasi terlama Hearts2Hearts?",     a: "Yuha" },
+  { q: "Siapa Center Hearts2Hearts?",                            a: "Ian" },
+  { q: "Siapa member H2H yang pernah tinggal di Kanada?",        a: "Stella" },
 ];
 
 let usedQuestions = [];
