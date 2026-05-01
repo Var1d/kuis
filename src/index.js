@@ -37,7 +37,6 @@ const questionBank = [
   { q: "Kapan Hearts2Hearts debut?",                             a: "24 Februari 2024" },
   { q: "Ada berapa jumlah anggota Hearts2Hearts?",               a: "8" },
   { q: "Siapa Member yang pernah menjadi MC Music Core di H2h?", a: "A-na" },
-  { q: "Siapa presiden pertama Indonesia?",                      a: "soekarno" },
   { q: "Siapa Trainee dengan durasi terlama Hearts2Hearts?",     a: "Yuha" },
   { q: "Siapa Center Hearts2Hearts?",                            a: "Ian" },
   { q: "Siapa member H2H yang pernah tinggal di Kanada?",        a: "Stella" },
